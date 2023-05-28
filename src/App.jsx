@@ -9,13 +9,28 @@ import {
 import border from "./data/border";
 import points from "./data/point";
 import places from "./data/place";
+import roads from "./data/road.json";
 import Input from "./input";
+import { point } from "leaflet";
 
 // import { useState } from "react";
 
 const App = () => {
   const position = [21.0394459, 105.8405899];
   const redOptions = { color: "red" };
+  const limeOptions = { color: "lime" };
+  const polyline = [];
+  roads.map((line) => {
+    const a = points.find((point) => point[2] === line[0]);
+    const b = points.find((point) => point[2] === line[1]);
+    polyline.push([a[0], a[1]]);
+    polyline.push([b[0], b[1]]);
+  });
+  const pol = [];
+  for (let i = 0; i < polyline.length; i = i + 2) {
+    pol.push([polyline[i], polyline[i + 1]]);
+  }
+  console.log(pol);
 
   const MapEvents = () => {
     useMapEvents({
@@ -67,11 +82,14 @@ const App = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <Polyline pathOptions={redOptions} positions={border} />
-        {places.map((point, i) => {
-          const displayPoint = [point[1], point[2]];
+        {pol.map((p, i) => (
+          <Polyline pathOptions={limeOptions} positions={p} key={i} />
+        ))}
+        {points.map((point, i) => {
+          const displayPoint = [point[0], point[1]];
           return (
             <Marker key={i} position={displayPoint}>
-              <Popup>{point[0]}</Popup>
+              <Popup>{point[2]}</Popup>
             </Marker>
           );
         })}
