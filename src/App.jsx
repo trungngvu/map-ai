@@ -13,9 +13,14 @@ import roads from "./data/road.json";
 import Input from "./input";
 import { point } from "leaflet";
 
-// import { useState } from "react";
+import { useState } from "react";
 
 const App = () => {
+  const [isMarker, setIsMarker] = useState(true);
+  const [isRoad, setIsRoad] = useState(true);
+  const [coordinate, setCoordinate]= useState("");
+
+
   const position = [21.0394459, 105.8405899];
   const redOptions = { color: "red" };
   const limeOptions = { color: "lime" };
@@ -35,6 +40,7 @@ const App = () => {
   const MapEvents = () => {
     useMapEvents({
       click(e) {
+        setCoordinate([e.latlng.lat, e.latlng.lng].toString())
         console.log([e.latlng.lat, e.latlng.lng]);
       },
     });
@@ -70,6 +76,12 @@ const App = () => {
           ➜
         </div>
         <Input text={"Chọn điểm đến"} places={places} />
+        <div>
+          <button onClick={()=> setIsMarker(prev=>!prev)}>Toggle point</button>
+          <button onClick={()=> setIsRoad(prev=>!prev)}>Toggle road</button>
+          <div>{`[${coordinate}]`}</div>
+          <button onClick={()=>navigator.clipboard.writeText(`[${coordinate}]`)}>Copy</button>
+        </div>
       </div>
       <MapContainer
         center={position}
@@ -82,10 +94,10 @@ const App = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <Polyline pathOptions={redOptions} positions={border} />
-        {pol.map((p, i) => (
+        {isRoad && pol.map((p, i) => (
           <Polyline pathOptions={limeOptions} positions={p} key={i} />
         ))}
-        {points.map((point, i) => {
+        {isMarker && points.map((point, i) => {
           const displayPoint = [point[0], point[1]];
           return (
             <Marker key={i} position={displayPoint}>
