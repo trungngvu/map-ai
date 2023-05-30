@@ -7,7 +7,9 @@ import Input from "./input";
 
 import { useState, useRef, useMemo } from "react";
 
-function DraggableMarker({ positionInput, PointCount, index, setRender, setPointConnection }) {
+const pointsHandle = [...points];
+
+function DraggableMarker({ positionInput, PointCount, index, setRender, setPointConnection, setIsMarker }) {
   // const [draggable, setDraggable] = useState(false);
   const [position, setPosition] = useState(positionInput);
   const markerRef = useRef(null);
@@ -17,7 +19,7 @@ function DraggableMarker({ positionInput, PointCount, index, setRender, setPoint
         const marker = markerRef.current;
         if (marker != null) {
           setPosition(marker.getLatLng());
-          points[index] = [marker.getLatLng().lat, marker.getLatLng().lng, PointCount];
+          pointsHandle[index] = [marker.getLatLng().lat, marker.getLatLng().lng, PointCount];
           setRender((prev) => !prev);
         }
       },
@@ -35,10 +37,20 @@ function DraggableMarker({ positionInput, PointCount, index, setRender, setPoint
     []
   );
 
-  const deleteMark = (e) => {
+  const deleteMark = (e, PointCount) => {
     e.preventDefault();
     e.stopPropagation();
-    points.splice(index, 1);
+    // remove element in points with PointCount
+    const pointBackup = [...pointsHandle];
+    const pointDelete = [...pointBackup.filter((point) => point[2] !== PointCount)];
+    pointsHandle.splice(0, pointsHandle.length);
+    pointsHandle.push(...pointDelete);
+    setIsMarker((prev) => !prev);
+    // sleep 2s
+    setTimeout(() => {
+      setIsMarker((prev) => !prev);
+    }, 10);
+
     // delete road
     const roadDelete = roads.filter((road) => road[0] !== PointCount && road[1] !== PointCount);
     roads.splice(0, roads.length);
@@ -52,7 +64,7 @@ function DraggableMarker({ positionInput, PointCount, index, setRender, setPoint
       <Marker position={position} ref={markerRef} draggable={true} eventHandlers={eventHandlers}>
         <Popup>
           {PointCount}
-          <button onClick={(e) => deleteMark(e)}>-</button>
+          <button onClick={(e) => deleteMark(e, PointCount)}>-</button>
         </Popup>
       </Marker>
     </>
@@ -75,8 +87,8 @@ const App = () => {
 
   const polyline = [];
   roads.map((line) => {
-    const a = points.find((point) => point[2] === line[0]);
-    const b = points.find((point) => point[2] === line[1]);
+    const a = pointsHandle.find((point) => point[2] === line[0]);
+    const b = pointsHandle.find((point) => point[2] === line[1]);
     polyline.push([a[0], a[1]]);
     polyline.push([b[0], b[1]]);
   });
@@ -89,8 +101,8 @@ const App = () => {
   const ow = [];
 
   oneWay.map((line) => {
-    const a = points.find((point) => point[2] === line[0]);
-    const b = points.find((point) => point[2] === line[1]);
+    const a = pointsHandle.find((point) => point[2] === line[0]);
+    const b = pointsHandle.find((point) => point[2] === line[1]);
     ow.push([a[0], a[1]]);
     ow.push([b[0], b[1]]);
   });
@@ -114,8 +126,8 @@ const App = () => {
   };
 
   const downloadFileJson = () => {
-    console.log(points);
-    const data = JSON.stringify(points);
+    console.log(pointsHandle);
+    const data = JSON.stringify(pointsHandle);
     const data1 = JSON.stringify(roads);
     saveJSONToFile(data, "point.json");
     saveJSONToFile(data1, "road.json");
@@ -140,11 +152,7 @@ const App = () => {
       const pointCN = [...pointConnection];
       roads.push(pointCN);
       const pointReverse = pointConnection.reverse();
-      console.log("pointConnection: ", pointConnection);
-      console.log("reverse 1: ", pointReverse);
       if (checkMode) roads.push(pointReverse);
-      // toats
-      console.log("roads: ", roads[roads.length - 1], roads[roads.length - 2]);
     }
     setPointConnection([]);
   };
@@ -155,14 +163,16 @@ const App = () => {
     useMapEvents({
       click(e) {
         setCoordinate([e.latlng.lat, e.latlng.lng].toString());
-        const pointLast = points[points.length - 1];
+        const pointLast = pointsHandle[pointsHandle.length - 1];
         const pointAdd = [e.latlng.lat, e.latlng.lng, pointLast[2] + 1];
-        points.push(pointAdd);
+        pointsHandle.push(pointAdd);
         setRender((prev) => !prev);
       },
     });
     return false;
   };
+
+  console.log("Re-render");
 
   return (
     <div
@@ -215,7 +225,7 @@ const App = () => {
         {isRoad && pol.map((p, i) => <Polyline pathOptions={limeOptions} positions={p} key={i} />)}
         {isOneWayRoad && oneWayLine.map((p, i) => <Polyline pathOptions={blueOptions} positions={p} key={i} />)}
         {isMarker &&
-          points.map((point, i) => {
+          pointsHandle.map((point, i) => {
             const displayPoint = [point[0], point[1]];
             return (
               <DraggableMarker
@@ -226,6 +236,7 @@ const App = () => {
                 setRender={setRender}
                 render={render}
                 setPointConnection={setPointConnection}
+                setIsMarker={setIsMarker}
               ></DraggableMarker>
             );
           })}
