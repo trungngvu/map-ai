@@ -6,18 +6,28 @@ import {
   Polyline,
   useMapEvents,
 } from "react-leaflet";
+import L from "leaflet";
 import border from "./data/border";
 import points from "./data/point";
 import places from "./data/place";
 import roads from "./data/road.json";
 import Input from "./input";
 
-import { useState } from "react";
+import startIcon from "../public/start.svg";
+import endIcon from "../public/end.svg";
+
+import { useState, useMemo, useRef } from "react";
 
 const App = () => {
-  const [isMarker, setIsMarker] = useState(true);
-  const [isRoad, setIsRoad] = useState(true);
-  const [isOneWayRoad, setIsOneWayRoad] = useState(true);
+  const [isMarker, setIsMarker] = useState(false);
+  const [isRoad, setIsRoad] = useState(false);
+  const [isOneWayRoad, setIsOneWayRoad] = useState(false);
+
+  const [isChoosingStart, setIsChoosingStart] = useState(false);
+  const [isChoosingEnd, setIsChoosingEnd] = useState(false);
+
+  const [startCoordinate, setStartCoordinate] = useState();
+  const [endCoordinate, setEndCoordinate] = useState();
 
   const [coordinate, setCoordinate] = useState("");
 
@@ -58,12 +68,61 @@ const App = () => {
   const MapEvents = () => {
     useMapEvents({
       click(e) {
+        if (isChoosingStart) {
+          setStartCoordinate([e.latlng.lat, e.latlng.lng]);
+          setIsChoosingStart(false);
+        }
+        if (isChoosingEnd) {
+          setEndCoordinate([e.latlng.lat, e.latlng.lng]);
+          setIsChoosingEnd(false);
+        }
         setCoordinate([e.latlng.lat, e.latlng.lng].toString());
         console.log([e.latlng.lat, e.latlng.lng]);
       },
     });
     return false;
   };
+
+  const startIc = new L.Icon({
+    iconUrl: startIcon,
+    popupAnchor: [-0, -0],
+    iconSize: new L.Point(30, 45),
+  });
+  const endIc = new L.Icon({
+    iconUrl: endIcon,
+    popupAnchor: [-0, -0],
+    iconRetinaUrl: endIcon,
+    iconSize: new L.Point(30, 45),
+  });
+
+  function DraggableMarker({ pos, setPos, icon }) {
+    const markerRef = useRef(null);
+    const eventHandlers = useMemo(
+      () => ({
+        dragend() {
+          const marker = markerRef.current;
+          if (marker != null) {
+            setPos(marker.getLatLng());
+          }
+        },
+      }),
+      []
+    );
+
+    return (
+      <Marker
+        draggable={true}
+        eventHandlers={eventHandlers}
+        position={pos}
+        ref={markerRef}
+        icon={icon}
+      >
+        <Popup>
+          <button onClick={() => setPos(null)}>Xóa</button>
+        </Popup>
+      </Marker>
+    );
+  }
 
   return (
     <div
@@ -82,7 +141,32 @@ const App = () => {
           padding: 20,
         }}
       >
-        <Input text={"Chọn điểm đi"} places={places} />
+        <div style={{ display: "flex" }}>
+          <Input
+            text={"Chọn điểm đi"}
+            places={places}
+            onChange={(event, newValue) => {
+              console.log(event);
+            }}
+          />
+          <div
+            style={{
+              border: "1px solid gray",
+              borderRadius: 3,
+              height: "56px",
+              width: "56px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginLeft: 5,
+              cursor: "pointer",
+            }}
+            onClick={() => setIsChoosingStart(true)}
+          >
+            <img src="start.svg" width={35} height={35} />
+          </div>
+        </div>
+
         <div
           style={{
             display: "flex",
@@ -93,7 +177,25 @@ const App = () => {
         >
           ➜
         </div>
-        <Input text={"Chọn điểm đến"} places={places} />
+        <div style={{ display: "flex" }}>
+          <Input text={"Chọn điểm đến"} places={places} />
+          <div
+            style={{
+              border: "1px solid gray",
+              borderRadius: 3,
+              height: "56px",
+              width: "56px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginLeft: 5,
+              cursor: "pointer",
+            }}
+            onClick={() => setIsChoosingEnd(true)}
+          >
+            <img src="end.svg" width={35} height={35} />
+          </div>
+        </div>
         <div>
           <button onClick={() => setIsMarker((prev) => !prev)}>
             Toggle point
@@ -131,6 +233,21 @@ const App = () => {
           oneWayLine.map((p, i) => (
             <Polyline pathOptions={blueOptions} positions={p} key={i} />
           ))}
+        {startCoordinate && (
+          <DraggableMarker
+            pos={startCoordinate}
+            setPos={setStartCoordinate}
+            icon={startIc}
+          />
+        )}
+        {endCoordinate && (
+          <DraggableMarker
+            pos={endCoordinate}
+            setPos={setEndCoordinate}
+            icon={endIc}
+          />
+        )}
+
         {isMarker &&
           points.map((point, i) => {
             const displayPoint = [point[0], point[1]];
