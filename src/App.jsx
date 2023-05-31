@@ -13,8 +13,8 @@ import places from "./data/place";
 import roads from "./data/road.json";
 import Input from "./input";
 
-import startIcon from "../public/start.svg";
-import endIcon from "../public/end.svg";
+import startIcon from "./assets/start.svg";
+import endIcon from "./assets/end.svg";
 
 import { useState, useMemo, useRef } from "react";
 
@@ -163,7 +163,7 @@ const App = () => {
             }}
             onClick={() => setIsChoosingStart(true)}
           >
-            <img src="start.svg" width={35} height={35} />
+            <img src={startIcon} width={35} height={35} />
           </div>
         </div>
 
@@ -193,7 +193,7 @@ const App = () => {
             }}
             onClick={() => setIsChoosingEnd(true)}
           >
-            <img src="end.svg" width={35} height={35} />
+            <img src={endIcon} width={35} height={35} />
           </div>
         </div>
         <div>
