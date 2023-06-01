@@ -146,7 +146,7 @@ const App = () => {
             text={"Chọn điểm đi"}
             places={places}
             onChange={(event, newValue) => {
-              console.log(event);
+              setStartCoordinate(newValue?.coordinate);
             }}
           />
           <div
@@ -161,6 +161,7 @@ const App = () => {
               marginLeft: 5,
               cursor: "pointer",
             }}
+            className="hover"
             onClick={() => setIsChoosingStart(true)}
           >
             <img src={startIcon} width={35} height={35} />
@@ -178,7 +179,13 @@ const App = () => {
           ➜
         </div>
         <div style={{ display: "flex" }}>
-          <Input text={"Chọn điểm đến"} places={places} />
+          <Input
+            text={"Chọn điểm đến"}
+            places={places}
+            onChange={(event, newValue) => {
+              setEndCoordinate(newValue?.coordinate);
+            }}
+          />
           <div
             style={{
               border: "1px solid gray",
@@ -191,6 +198,7 @@ const App = () => {
               marginLeft: 5,
               cursor: "pointer",
             }}
+            className="hover"
             onClick={() => setIsChoosingEnd(true)}
           >
             <img src={endIcon} width={35} height={35} />
