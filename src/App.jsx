@@ -40,20 +40,11 @@ const App = () => {
             const data = res.split(",");
             data.pop();
             const result = [];
-            result.push([
-              startCoordinate,
-              points.find((point) => data[0] == point[2]),
-            ]);
-            for (let i = 0; i < data.length - 1; i++) {
-              const a = points.find((point) => data[i] == point[2]);
-              const b = points.find((point) => data[i + 1] == point[2]);
-              result.push([a, b]);
-            }
-            result.push([
-              points.find((point) => data[data.length - 1] == point[2]),
-              endCoordinate,
-            ]);
-            console.log(result);
+            result.push(startCoordinate);
+            result.push(
+              ...data.map((point) => points.find((p) => p[2] == point))
+            );
+            result.push(endCoordinate);
             setPath(result);
           }
         });
@@ -273,13 +264,9 @@ const App = () => {
             icon={endIc}
           />
         )}
-        {path &&
-          path !== -1 &&
-          path !== -2 &&
-          path !== -3 &&
-          path.map((way, i) => (
-            <Polyline key={i} pathOptions={limeOptions} positions={way} />
-          ))}
+        {path && path !== -1 && path !== -2 && path !== -3 && (
+          <Polyline pathOptions={limeOptions} positions={path} />
+        )}
 
         <MapEvents />
       </MapContainer>
