@@ -10,8 +10,8 @@ import L from "leaflet";
 import border from "./data/border";
 import points from "./data/point";
 import places from "./data/place";
-import roads from "./data/road.json";
 import Input from "./input";
+import Button from "@mui/material/Button";
 
 import startIcon from "./assets/start.svg";
 import endIcon from "./assets/end.svg";
@@ -19,20 +19,12 @@ import endIcon from "./assets/end.svg";
 import { useState, useMemo, useRef, useEffect } from "react";
 
 const App = () => {
-  const [isFinding, setIsFinding] = useState(false);
-  const [respond, setResponse] = useState("");
-  console.log(respond);
-  const [isMarker, setIsMarker] = useState(false);
-  const [isRoad, setIsRoad] = useState(false);
-  const [isOneWayRoad, setIsOneWayRoad] = useState(false);
-
+  const [isFinding, setIsFinding] = useState(0);
+  const [path, setPath] = useState(null);
   const [isChoosingStart, setIsChoosingStart] = useState(false);
   const [isChoosingEnd, setIsChoosingEnd] = useState(false);
-
   const [startCoordinate, setStartCoordinate] = useState();
   const [endCoordinate, setEndCoordinate] = useState();
-
-  const [coordinate, setCoordinate] = useState("");
 
   useEffect(() => {
     startCoordinate &&
@@ -40,57 +32,50 @@ const App = () => {
       fetch(
         `http://localhost:3000/?number1=${startCoordinate[0]}&number2=${startCoordinate[1]}&number3=${endCoordinate[0]}&number4=${endCoordinate[1]}`
       )
-        .then((res) => res.json)
-        .then((res) => setResponse(res));
+        .then((res) => res.json())
+        .then((res) => {
+          if (res === "No road\r\n") {
+            setPath(-1);
+          } else {
+            const data = res.split(",");
+            data.pop();
+            const result = [];
+            result.push([
+              startCoordinate,
+              points.find((point) => data[0] == point[2]),
+            ]);
+            for (let i = 0; i < data.length - 1; i++) {
+              const a = points.find((point) => data[i] == point[2]);
+              const b = points.find((point) => data[i + 1] == point[2]);
+              result.push([a, b]);
+            }
+            result.push([
+              points.find((point) => data[data.length - 1] == point[2]),
+              endCoordinate,
+            ]);
+            console.log(result);
+            setPath(result);
+          }
+        });
   }, [isFinding]);
 
   const position = [21.0394459, 105.8405899];
   const redOptions = { color: "red" };
   const limeOptions = { color: "lime" };
-  const blueOptions = { color: "blue" };
-
-  const polyline = [];
-  roads.map((line) => {
-    const a = points.find((point) => point[2] === line[0]);
-    const b = points.find((point) => point[2] === line[1]);
-    polyline.push([a[0], a[1]]);
-    polyline.push([b[0], b[1]]);
-  });
-  const pol = [];
-  for (let i = 0; i < polyline.length; i = i + 2) {
-    pol.push([polyline[i], polyline[i + 1]]);
-  }
-
-  const oneWay = roads.filter(
-    (road, i) =>
-      !roads.some((r, j) => r[0] === road[1] && r[1] === road[0] && i !== j)
-  );
-  const ow = [];
-
-  oneWay.map((line) => {
-    const a = points.find((point) => point[2] === line[0]);
-    const b = points.find((point) => point[2] === line[1]);
-    ow.push([a[0], a[1]]);
-    ow.push([b[0], b[1]]);
-  });
-  const oneWayLine = [];
-  for (let i = 0; i < ow.length; i = i + 2) {
-    oneWayLine.push([ow[i], ow[i + 1]]);
-  }
 
   const MapEvents = () => {
     useMapEvents({
       click(e) {
         if (isChoosingStart) {
           setStartCoordinate([e.latlng.lat, e.latlng.lng]);
+          setPath(null);
           setIsChoosingStart(false);
         }
         if (isChoosingEnd) {
           setEndCoordinate([e.latlng.lat, e.latlng.lng]);
+          setPath(null);
           setIsChoosingEnd(false);
         }
-        setCoordinate([e.latlng.lat, e.latlng.lng].toString());
-        console.log([e.latlng.lat, e.latlng.lng]);
       },
     });
     return false;
@@ -115,7 +100,8 @@ const App = () => {
         dragend() {
           const marker = markerRef.current;
           if (marker != null) {
-            setPos(marker.getLatLng());
+            setPos([marker.getLatLng().lat, marker.getLatLng().lng]);
+            setPath(null);
           }
         },
       }),
@@ -160,6 +146,7 @@ const App = () => {
             places={places}
             onChange={(event, newValue) => {
               setStartCoordinate(newValue?.coordinate);
+              setPath(null);
             }}
           />
           <div
@@ -173,6 +160,7 @@ const App = () => {
               justifyContent: "center",
               marginLeft: 5,
               cursor: "pointer",
+              opacity: isChoosingStart ? 0.5 : 1,
             }}
             className="hover"
             onClick={() => setIsChoosingStart(true)}
@@ -197,6 +185,7 @@ const App = () => {
             places={places}
             onChange={(event, newValue) => {
               setEndCoordinate(newValue?.coordinate);
+              setPath(null);
             }}
           />
           <div
@@ -210,6 +199,7 @@ const App = () => {
               justifyContent: "center",
               marginLeft: 5,
               cursor: "pointer",
+              opacity: isChoosingEnd ? 0.5 : 1,
             }}
             className="hover"
             onClick={() => setIsChoosingEnd(true)}
@@ -217,25 +207,46 @@ const App = () => {
             <img src={endIcon} width={35} height={35} />
           </div>
         </div>
-        {/* <div>
-          <button onClick={() => setIsMarker((prev) => !prev)}>
-            Toggle point
-          </button>
-          <button onClick={() => setIsRoad((prev) => !prev)}>
-            Toggle road
-          </button>
-          <button onClick={() => setIsOneWayRoad((prev) => !prev)}>
-            Toggle one-way road
-          </button>
-          <div>{`[${coordinate}]`}</div>
-          <button
-            onClick={() => navigator.clipboard.writeText(`[${coordinate}]`)}
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (!startCoordinate) {
+                setPath(-2);
+                return;
+              }
+              if (!endCoordinate) {
+                setPath(-3);
+                return;
+              }
+              setIsFinding((prev) => ++prev);
+            }}
           >
-            Copy
-          </button>
-        </div>*/}
+            Tìm đường
+          </Button>
+
+          <div
+            style={{
+              color: "red",
+              position: "absolute",
+              bottom: 0,
+              width: "200%",
+              transform: "translateX(15%) translateY(60%)",
+            }}
+          >
+            {path === -1 && "Không tìm thấy đường đi"}
+            {path === -2 && "Vui lòng chọn điểm đầu"}
+            {path === -3 && "Vui lòng chọn điểm cuối"}
+          </div>
+        </div>
       </div>
-      <button onClick={() => setIsFinding(true)}>Tìm đường</button>
       <MapContainer
         center={position}
         zoom={16}
@@ -247,14 +258,7 @@ const App = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <Polyline pathOptions={redOptions} positions={border} />
-        {isRoad &&
-          pol.map((p, i) => (
-            <Polyline pathOptions={limeOptions} positions={p} key={i} />
-          ))}
-        {isOneWayRoad &&
-          oneWayLine.map((p, i) => (
-            <Polyline pathOptions={blueOptions} positions={p} key={i} />
-          ))}
+
         {startCoordinate && (
           <DraggableMarker
             pos={startCoordinate}
@@ -269,16 +273,14 @@ const App = () => {
             icon={endIc}
           />
         )}
+        {path &&
+          path !== -1 &&
+          path !== -2 &&
+          path !== -3 &&
+          path.map((way, i) => (
+            <Polyline key={i} pathOptions={limeOptions} positions={way} />
+          ))}
 
-        {isMarker &&
-          points.map((point, i) => {
-            const displayPoint = [point[0], point[1]];
-            return (
-              <Marker key={i} position={displayPoint}>
-                <Popup>{point[2]}</Popup>
-              </Marker>
-            );
-          })}
         <MapEvents />
       </MapContainer>
     </div>
