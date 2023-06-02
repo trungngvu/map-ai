@@ -52,7 +52,7 @@ const App = () => {
 
   const position = [21.0394459, 105.8405899];
   const redOptions = { color: "red" };
-  const limeOptions = { color: "lime" };
+  const limeOptions = { color: "blue" };
 
   const MapEvents = () => {
     useMapEvents({
