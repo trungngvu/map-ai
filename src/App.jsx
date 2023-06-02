@@ -274,9 +274,6 @@ const App = () => {
         {path && path !== -1 && path !== -2 && path !== -3 && (
           <Polyline pathOptions={limeOptions} positions={path} />
         )}
-        {points.map((point) => (
-          <Marker key={point[2]} position={point} />
-        ))}
 
         <MapEvents />
       </MapContainer>
