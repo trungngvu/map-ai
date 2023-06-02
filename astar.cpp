@@ -46,7 +46,7 @@ double euclideanDistance(const Point &p1, const Point &p2)
 // tìm điểm gần nhất khi người dùng nhập vào
 Point findNearestPoint(const Point &target, const vector<Point> &points)
 {
-    double minDistance = numeric_limits<double>::max();
+    double minDistance = 100;
     Point nearestPoint = points.front();
 
     for (const auto &point : points)
@@ -202,10 +202,10 @@ int main()
 
     if (!path.empty())
     {
+        path.insert(path.begin(), startPoint); // Thêm startPoint vào đầu path
         for (const auto &point : path)
         {
             cout << point.id << ",";
-            ;
         }
         cout << endl;
     }
