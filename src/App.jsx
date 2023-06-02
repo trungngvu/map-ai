@@ -16,9 +16,12 @@ import Input from "./input";
 import startIcon from "./assets/start.svg";
 import endIcon from "./assets/end.svg";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 
 const App = () => {
+  const [isFinding, setIsFinding] = useState(false);
+  const [respond, setResponse] = useState("");
+  console.log(respond);
   const [isMarker, setIsMarker] = useState(false);
   const [isRoad, setIsRoad] = useState(false);
   const [isOneWayRoad, setIsOneWayRoad] = useState(false);
@@ -30,6 +33,16 @@ const App = () => {
   const [endCoordinate, setEndCoordinate] = useState();
 
   const [coordinate, setCoordinate] = useState("");
+
+  useEffect(() => {
+    startCoordinate &&
+      endCoordinate &&
+      fetch(
+        `http://localhost:3000/?number1=${startCoordinate[0]}&number2=${startCoordinate[1]}&number3=${endCoordinate[0]}&number4=${endCoordinate[1]}`
+      )
+        .then((res) => res.json)
+        .then((res) => setResponse(res));
+  }, [isFinding]);
 
   const position = [21.0394459, 105.8405899];
   const redOptions = { color: "red" };
@@ -204,7 +217,7 @@ const App = () => {
             <img src={endIcon} width={35} height={35} />
           </div>
         </div>
-        <div>
+        {/* <div>
           <button onClick={() => setIsMarker((prev) => !prev)}>
             Toggle point
           </button>
@@ -220,8 +233,9 @@ const App = () => {
           >
             Copy
           </button>
-        </div>
+        </div>*/}
       </div>
+      <button onClick={() => setIsFinding(true)}>Tìm đường</button>
       <MapContainer
         center={position}
         zoom={16}
