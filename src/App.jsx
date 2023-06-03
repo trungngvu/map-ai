@@ -25,28 +25,35 @@ const App = () => {
   const [isChoosingEnd, setIsChoosingEnd] = useState(false);
   const [startCoordinate, setStartCoordinate] = useState();
   const [endCoordinate, setEndCoordinate] = useState();
+  const [valueStart, setValueStart] = useState(null);
+  const [valueEnd, setValueEnd] = useState(null);
 
   useEffect(() => {
     startCoordinate &&
       endCoordinate &&
       fetch(
-        `http://localhost:3000/?number1=${startCoordinate[0]}&number2=${startCoordinate[1]}&number3=${endCoordinate[0]}&number4=${endCoordinate[1]}`
+        `http://localhost:3000/?startX=${startCoordinate[0]}&startY=${startCoordinate[1]}&endX=${endCoordinate[0]}&endY=${endCoordinate[1]}`
       )
         .then((res) => res.json())
         .then((res) => {
+          if (startCoordinate.toString() === endCoordinate.toString()) {
+            setPath(-4);
+            return;
+          }
+
           if (res === "No road\r\n") {
             setPath(-1);
-          } else {
-            const data = res.split(",");
-            data.pop();
-            const result = [];
-            result.push(startCoordinate);
-            result.push(
-              ...data.map((point) => points.find((p) => p[2] == point))
-            );
-            result.push(endCoordinate);
-            setPath(result);
+            return;
           }
+          const data = res.split(",");
+          data.pop();
+          const result = [];
+          result.push(startCoordinate);
+          result.push(
+            ...data.map((point) => points.find((p) => p[2] == point))
+          );
+          result.push(endCoordinate);
+          setPath(result);
         });
   }, [isFinding]);
 
@@ -57,14 +64,17 @@ const App = () => {
   const MapEvents = () => {
     useMapEvents({
       click(e) {
+        console.log([e.latlng.lat, e.latlng.lng]);
         if (isChoosingStart) {
           setStartCoordinate([e.latlng.lat, e.latlng.lng]);
           setPath(null);
+          setValueStart(null);
           setIsChoosingStart(false);
         }
         if (isChoosingEnd) {
           setEndCoordinate([e.latlng.lat, e.latlng.lng]);
           setPath(null);
+          setValueEnd(null);
           setIsChoosingEnd(false);
         }
       },
@@ -84,11 +94,12 @@ const App = () => {
     iconSize: new L.Point(30, 45),
   });
 
-  function DraggableMarker({ pos, setPos, icon }) {
+  function DraggableMarker({ pos, setPos, icon, which }) {
     const markerRef = useRef(null);
     const eventHandlers = useMemo(
       () => ({
         dragend() {
+          which ? setValueStart(null) : setValueEnd(null);
           const marker = markerRef.current;
           if (marker != null) {
             setPos([marker.getLatLng().lat, marker.getLatLng().lng]);
@@ -112,6 +123,7 @@ const App = () => {
             onClick={() => {
               setPos(null);
               setPath(null);
+              which ? setValueStart(null) : setValueEnd(null);
             }}
           >
             Xóa
@@ -143,9 +155,11 @@ const App = () => {
             text={"Chọn điểm đi"}
             places={places}
             onChange={(event, newValue) => {
+              setValueStart(newValue);
               setStartCoordinate(newValue?.coordinate);
               setPath(null);
             }}
+            value={valueStart}
           />
           <div
             style={{
@@ -182,9 +196,11 @@ const App = () => {
             text={"Chọn điểm đến"}
             places={places}
             onChange={(event, newValue) => {
+              setValueEnd(newValue);
               setEndCoordinate(newValue?.coordinate);
               setPath(null);
             }}
+            value={valueEnd}
           />
           <div
             style={{
@@ -240,8 +256,9 @@ const App = () => {
             }}
           >
             {path === -1 && "Không tìm thấy đường đi"}
-            {path === -2 && "Vui lòng chọn điểm đầu"}
-            {path === -3 && "Vui lòng chọn điểm cuối"}
+            {path === -2 && "Vui lòng chọn điểm đi"}
+            {path === -3 && "Vui lòng chọn điểm đến"}
+            {path === -4 && "Điểm đi trùng điểm đến"}
           </div>
         </div>
       </div>
@@ -262,6 +279,7 @@ const App = () => {
             pos={startCoordinate}
             setPos={setStartCoordinate}
             icon={startIc}
+            which
           />
         )}
         {endCoordinate && (
