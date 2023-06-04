@@ -280,11 +280,6 @@ const App = () => {
           path.map((way, i) => (
             <Polyline key={i} pathOptions={limeOptions} positions={way} />
           ))}
-        {points.map((point) => (
-          <Marker key={point[2]} position={point}>
-            <Popup>{point[2]}</Popup>
-          </Marker>
-        ))}
         <MapEvents />
       </MapContainer>
     </div>
