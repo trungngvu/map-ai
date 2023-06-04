@@ -62,6 +62,28 @@ Point findNearestPoint(const Point &target, const vector<Point> &points)
     return nearestPoint;
 }
 
+Point findKthNearestPoint(const Point &target, const vector<Point> &points, int k)
+{
+    auto comparator = [](const pair<double, Point> &p1, const pair<double, Point> &p2)
+    {
+        return p1.first < p2.first;
+    };
+
+    priority_queue<pair<double, Point>, vector<pair<double, Point>>, decltype(comparator)> pq(comparator);
+    for (const auto &point : points)
+    {
+        double distance = euclideanDistance(target, point);
+        pq.push({distance, point});
+
+        if (pq.size() > k)
+        {
+            pq.pop();
+        }
+    }
+
+    return pq.top().second;
+}
+
 // Thuật toán A*
 vector<Point> aStarAlgorithm(const Point &start, const Point &goal, const vector<Edge> &edges, const vector<Point> &points)
 {
@@ -196,13 +218,23 @@ int main()
 
     readPoint("./src/data/point.json");
     readRoad("./src/data/road.json");
+
+    int k = 1;
     Point startPoint = findNearestPoint({startX, startY}, points);
     Point goalPoint = findNearestPoint({goalX, goalY}, points);
-    vector<Point> path = aStarAlgorithm(startPoint, goalPoint, edges, points);
+    vector<Point> path;
+
+    while (path.empty() && k <= points.size())
+    {
+        startPoint = findKthNearestPoint({startX, startY}, points, k);
+        goalPoint = findKthNearestPoint({goalX, goalY}, points, k);
+        path = aStarAlgorithm(startPoint, goalPoint, edges, points);
+        k++;
+    }
 
     if (!path.empty())
     {
-        path.insert(path.begin(), startPoint); // Thêm startPoint vào đầu path
+        path.insert(path.begin(), startPoint);
         for (const auto &point : path)
         {
             cout << point.id << ",";
