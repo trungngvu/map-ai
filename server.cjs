@@ -40,10 +40,8 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(scriptOutput));
   });
-
 });
 
-const port = 3000;
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+server.listen(process.env.PORT, () => {
+  console.log(`Server is running on port ${process.env.PORT}`);
 });
